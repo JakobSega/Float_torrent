@@ -31,6 +31,7 @@ async fn collect_body(req: Request<Incoming>) -> Result<String, hyper::Error> {
 
     let whole_body = req.collect().await?.to_bytes();
     let whole_body = std::str::from_utf8(&whole_body).unwrap().to_string();
+    //println!("The body is : {}", whole_body);
     return Ok(whole_body);
 }
 
@@ -49,7 +50,7 @@ fn full<T: Into<Bytes>>(chunk: T) -> BoxBody<Bytes, hyper::Error> {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let addr: SocketAddr = ([127, 0, 0, 1], 7878).into();
-
+    
     // For the most basic of state, we just share a counter, that increments
     // with each request, and we send its value back in the response.
 
@@ -60,7 +61,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     loop {
         let (stream, _) = listener.accept().await?;
         let io = TokioIo::new(stream);
-
+        //println!("IO : {:?}", io);
         let db = db.clone();
 
         let service = service_fn(move |req| {
@@ -71,7 +72,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         let db = db.lock().unwrap();
                         let values = db.values().collect::<Vec<_>>();
                         let value = serde_json::to_string(&values).unwrap();
-                        println!("Returning: {:?}", value);
+                        println!("Returning: {}", value);
                         Ok::<_, Error>(Response::new(full(value)))
                     }
                     (&Method::POST, "/project") => {

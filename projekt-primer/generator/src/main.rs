@@ -9,8 +9,10 @@ use hyper::Error;
 use hyper::{body::Body, Method, Request, Response, StatusCode};
 use hyper_util::rt::TokioIo;
 use tokio::net::TcpListener;
-
+use sequence::models::Range;
 use serde::{Deserialize, Serialize};
+use sequence::constant::Constant;
+use sequence::models::Sequence;
 
 const PORT: u16 = 12345;
 
@@ -22,13 +24,6 @@ pub struct Project {
     pub name: String,
     pub ip: String,
     pub port: u16,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Range {
-    pub from: u64,
-    pub to: u64,
-    pub step: u64,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -53,30 +48,7 @@ pub struct SequenceInfo {
     sequences: u32,
 }
 
-pub struct Arithmetic {
-    start: f64,
-    step: f64,
-}
 
-impl Arithmetic {
-    pub fn new(start: f64, step: f64) -> Box<Arithmetic> {
-        Box::new(Arithmetic { start, step })
-    }
-
-    pub fn k_th(&self, k: usize) -> f64 {
-        self.start + (k as f64) * self.step
-    }
-
-    pub fn range(&self, range: Range) -> Vec<f64> {
-        let mut result = Vec::new();
-        let mut k = range.from;
-        while k <= range.to {
-            result.push(self.k_th(k as usize));
-            k += range.step;
-        }
-        result
-    }
-}
 
 fn sequences() -> Vec<SequenceInfo> {
     let mut sequences = Vec::new();
@@ -84,6 +56,12 @@ fn sequences() -> Vec<SequenceInfo> {
         name: "Arithmetic".to_string(),
         description: "Arithmetic sequence".to_string(),
         parameters: 2,
+        sequences: 0,
+    });
+    sequences.push(SequenceInfo {
+        name: "Constant".to_string(),
+        description: "Constant sequence".to_string(),
+        parameters: 1,
         sequences: 0,
     });
     sequences.push(SequenceInfo {
@@ -139,6 +117,17 @@ async fn send_get(url: String) -> Result<String, reqwest::Error> {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    //
+    let primer = Constant::new(1);
+    println!("{:?}", primer);
+    let range = Range {
+        from : 3,
+        to : 6,
+        step : 1
+    };
+    let r = primer.range(range);
+    println!("{:?}", r);
+    //
     let addr: SocketAddr = ([127, 0, 0, 1], PORT).into();
 
     let b = send_get("http://127.0.0.1:7878/project".to_string()).await?;
@@ -192,7 +181,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 let request: SequenceRequest = serde_json::from_str(&body).unwrap();
                                 let range = request.range;
                                 let seq =
-                                    Arithmetic::new(request.parameters[0], request.parameters[1]);
+                                    sequence::arithmetic::Arithmetic::new(request.parameters[0], request.parameters[1]);
+                                Ok(Response::new(full(
+                                    serde_json::to_string(&seq.range(range)).unwrap(),
+                                )))
+                            }
+                            Some(s) if *s.name == "Constant".to_string() => {
+                                let body = collect_body(req).await?;
+                                let request: SequenceRequest = serde_json::from_str(&body).unwrap();
+                                let range = request.range;
+                                let seq =
+                                    sequence::constant::Constant::new(request.parameters[0]);
                                 Ok(Response::new(full(
                                     serde_json::to_string(&seq.range(range)).unwrap(),
                                 )))
