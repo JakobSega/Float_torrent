@@ -47,6 +47,44 @@ impl Sequence<i64> for Combined<'_, i64> {
     }
 }
 
+
+
+impl Sequence<f64> for Combined<'_, f64> {
+    fn name(&self) -> String {
+        let mut name = String::new();
+        write!(name, "Combined sequence, made up of the following sequences:\n");
+        for seq in &self.sequences {
+            write!(name, "*** {}\n", seq.name()).unwrap();
+        }
+        write!(name, "These sequences are combined with the ecpression:\n").unwrap();
+        write!(name, "{}", (self.expression).represent());
+        name
+    }
+
+    fn start(&self) -> f64 {
+        let mut varse = HashMap::new();
+        for seq in &self.sequences {
+            varse.insert(seq.name().to_string(), Some(seq.start()));
+        }
+        match (self.expression).evaluate_map_f64(&varse) {
+            Some(x) => x,
+            None => panic!("Could not evaluate the expression...")
+        }
+    }
+
+    fn k_th(&self, k: usize) -> Option<f64> {
+        let mut varse = HashMap::new();
+        for seq in &self.sequences {
+            varse.insert(seq.name().to_string(), Some(seq.k_th(k).unwrap() as f64));
+        }
+        (self.expression).evaluate_map_f64(&varse)
+    }
+
+    fn contains(&self, item: f64) -> bool {
+        panic!("Shifted")
+    }
+}
+
 impl<T> Combined<'_, T> {
     fn new(sequences: Vec<Box<&dyn Sequence<T>>>, expression: AExpr) -> Box<Combined<T>> {
         Box::new(Combined{sequences : sequences, expression : expression})
