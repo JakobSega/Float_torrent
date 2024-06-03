@@ -13,6 +13,9 @@ use sequence::models::Range;
 use serde::{Deserialize, Serialize};
 use sequence::constant::Constant;
 use sequence::models::Sequence;
+use sequence::arithmetic::Arithmetic;
+use sequence::linearcombination::LinearCombination;
+use sequence::linearcombination;
 
 const PORT: u16 = 12345;
 
@@ -118,6 +121,24 @@ async fn send_get(url: String) -> Result<String, reqwest::Error> {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     //
+    let scalers = vec![2.0, 3.0, 1.5];
+    let scalers2 = scalers.clone();
+    let s1 = Arithmetic::new(1.2, 2.6);
+    let s2 = Constant::new(5.0);
+    let s1 : &dyn Sequence<f64> = &s1;
+    let s2 : &dyn Sequence<f64> = &s2;
+    let indeksi : Vec<usize> = vec![1, 2, 3];
+    
+    //let s3t: &dyn Sequence<i64> = &s3_
+    let lin_primer = linearcombination::linear_combination(vec![Box::new(s1), Box::new(s2)], scalers);
+    println!("{}", lin_primer.name());
+    for k in indeksi {
+        println!("Summing the {k}-th");
+        let od_konstantnega = s2.k_th(k);
+        let od_aritmeticnega = s1.k_th(k);
+        println!("{:?} * 1.0 + {:?} * {:?} + {:?} * {:?} = {:?}", scalers2[0], scalers2[1], od_aritmeticnega, scalers2[2], od_konstantnega, lin_primer.k_th(k));
+    }
+    generator::my_fun();
     let primer = Constant::new(1);
     println!("{:?}", primer);
     let range = Range {

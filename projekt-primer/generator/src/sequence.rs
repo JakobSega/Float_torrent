@@ -3,3 +3,4 @@ pub mod combined;
 pub mod constant;
 pub mod models;
 pub mod shifted;
+pub mod linearcombination;
