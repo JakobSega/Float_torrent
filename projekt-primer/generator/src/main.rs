@@ -217,6 +217,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     serde_json::to_string(&seq.range(range)).unwrap(),
                                 )))
                             }
+                            Some(s) if *s.name == "Lin Comb".to_string() => {
+                                let body = collect_body(req).await?;
+                                let request: SequenceRequest = serde_json::from_str(&body).unwrap();
+                                let range = request.range;
+                                let mut sequences : Vec<& dyn Sequence<f64>> = vec![];
+                                
+                                let seq =
+                                    //sequence::linearcombination::linear_combination(request.parameters[0], request.parameters[1]);
+                                    sequence::constant::Constant::new(request.parameters[0]);
+                                Ok(Response::new(full(
+                                    serde_json::to_string(&seq.range(range)).unwrap(),
+                                )))
+                            }
                             _ => panic!("Not implemented"),
                         }
                     }
