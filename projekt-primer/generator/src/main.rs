@@ -24,10 +24,49 @@ use futures::executor::block_on;
 use std::string::String;
 use std::vec::Vec;
 
+const NUMBER: u8 = 0; // Change this to 1 or 2 as needed
+
+#[derive(Debug)]
+pub struct Server<'a> {
+    port : u16,
+    keyword : &'a str,
+    name : &'a str,
+}
+
+const NORMAL : Server = Server {
+    port : 12345,
+    keyword : "",
+    name : ""
+};
+
+const AMONG_US : Server = Server {
+    port : 12346,
+    keyword : "_Imposter",
+    name : " & AmongUs"
+};
+
+const ELVES : Server = Server {
+    port : 12347,
+    keyword : "_Elves",
+    name : " & Elves"
+};
 
 
+static MY: Server = select_server(NUMBER);
 
-const PORT: u16 = 12345;
+const fn select_server<'a>(number: u8) -> Server<'a> {
+    match number {
+        0 => NORMAL,
+        1 => AMONG_US,
+        2 => ELVES,
+        _ => NORMAL, // Default to NORMAL if NUMBER is out of range
+    }
+}
+
+
+static PORT: u16 = MY.port;
+static KEYWORD : &str = MY.keyword;
+static NAME : &str = MY.name;
 const REGISTER : &str =  "http://127.0.0.1:7878/project";
 
 pub mod expression;
@@ -67,19 +106,24 @@ pub struct SequenceInfo {
 fn sequences() -> Vec<SequenceInfo> {
     let mut sequences = Vec::new();
     sequences.push(SequenceInfo {
-        name: "Arithmetic".to_string(),
+        name: ("Arithmetic".to_owned() + KEYWORD).to_string(),
         description: "Arithmetic sequence".to_string(),
         parameters: 2,
         sequences: 0,
     });
+    //V primeru serverja 'Elves' hočemo, da ima ime konstanega zaporedja enako kot ime konstantnega na serverju AmongUs, da prečekiramo, da vse deluje ok....
+    let mut k = KEYWORD;
+    if NUMBER == 2 {
+        k = "_Imposter"
+    }
     sequences.push(SequenceInfo {
-        name: "Constant".to_string(),
+        name: ("Constant".to_owned() + k).to_string(),
         description: "Constant sequence".to_string(),
         parameters: 1,
         sequences: 0,
     });
     sequences.push(SequenceInfo {
-        name: "Lin Comb".to_string(),
+        name: ("Lin Comb".to_owned() + KEYWORD).to_string(),
         description: "".to_string(),
         parameters: 3,
         sequences: 2,
@@ -89,7 +133,7 @@ fn sequences() -> Vec<SequenceInfo> {
 
 fn get_project() -> Project {
     return Project {
-        name: "Binarni Banditi".to_string(),
+        name: ("Binarni Banditi".to_owned() + NAME).to_string(),
         ip: "127.0.0.1".to_string(),
         port: PORT,
     };
@@ -161,6 +205,10 @@ async fn send_get(url: String) -> Result<String, reqwest::Error> {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     //
+    let mut k = KEYWORD;
+    if NUMBER == 2 {
+        k = "_Imposter"
+    }
     //let scalers = vec![2.0, 3.0, 1.5];
     //let scalers2 = scalers.clone();
     //let s1 = Arithmetic::new(1.2, 2.6);
@@ -336,7 +384,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     create_404()
                                 }
                             },
-                            Some(s) if *s.name == "Arithmetic".to_string() => {
+                            Some(s) if *s.name == ("Arithmetic".to_owned() + KEYWORD).to_string() => {
                                 println!("****************************-BEGIN_REQUEST\n");
                                 println!("Got a POST {} request. This sequence is available on this server. Returning the desired range.\n", r);
                                 
@@ -355,7 +403,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     serde_json::to_string(&seq.range(range)).unwrap(),
                                 )))
                             }
-                            Some(s) if *s.name == "Constant".to_string() => {
+                            //tule imamo posebej k, za primer ko imam Elves....
+                            
+                            Some(s) if *s.name == ("Constant".to_owned() + k).to_string() => {
                                 println!("****************************-BEGIN_REQUEST\n");
                                 println!("Got a POST {} request. This sequence is available on this server. Returning the desired range.\n", r);
                                 
@@ -373,7 +423,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     serde_json::to_string(&seq.range(range)).unwrap(),
                                 )))
                             }
-                            Some(s) if *s.name == "Lin Comb".to_string() => {
+                            Some(s) if *s.name == ("Lin Comb".to_owned() + KEYWORD).to_string() => {
                                 println!("****************************-BEGIN_REQUEST\n");
                                 println!("Got a POST {} request. This sequence is available on this server. Returning the desired range.\n", r);
                                 

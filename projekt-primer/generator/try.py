@@ -26,7 +26,7 @@ db izgleda nekoliko takole :
 'Binarni Banditi & Elves': {'Info': {'name': 'Binarni Banditi & Elves', 'ip': '127.0.0.1', 'port': 12347}, 
 'Sequences': {
     'Arithmetic_Elves': {'name': 'Arithmetic', 'description': 'Arithmetic sequence', 'parameters': 2, 'sequences': 0}, 
---->'Constant_Imposter': {'name': 'Constant', 'description': 'Constant sequence', 'parameters': 1, 'sequences': 0}, 
+--->'Constant_Imposter': {'name': 'Constant', 'description': 'Constant sequence', 'parameters': 1, 'sequences': 1}, 
     'Lin Comb_Elves': {'name': 'Lin Comb', 'description': '', 'parameters': 3, 'sequences': 2}}}},
 
 'Binarni Banditi': {'Info': {'name': 'Binarni Banditi', 'ip': '127.0.0.1', 'port': 12345}, 
@@ -35,15 +35,15 @@ db izgleda nekoliko takole :
     'Constant': {'name': 'Constant', 'description': 'Constant sequence', 'parameters': 1, 'sequences': 0}, 
     'Lin Comb': {'name': 'Lin Comb', 'description': '', 'parameters': 3, 'sequences': 2}}}}
 """
-#---> opozarja na primer, ko je isto zaporedje na dveh različnih serverjih. 
+#---> opozarja na primer, ko je isto zaporedje na dveh različnih serverjih. Dodatno - eno ima pravilno signaturo, drugo pa (tisto na Elves ima napačno signaturo...) 
 
-ZAP = "Constant_Imposter"
+ZAP = "Arithmetic"
 SERVER = "Binarni Banditi"
 
 #c_0 je vrednost konstanega zap, a_0 in d sta parametra za aritmetično
 c_0 = 0
-a_0 = 2.0
-d = 3.0
+a_0 = 10
+d = 2.5
 
 #Za definicijo ranga
 start = 0 
