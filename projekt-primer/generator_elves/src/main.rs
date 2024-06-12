@@ -94,6 +94,7 @@ pub struct SequenceRequest {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+#[derive(PartialEq)]
 pub struct SequenceInfo {
     name: String,
     description: String,
@@ -116,11 +117,15 @@ fn sequences() -> Vec<SequenceInfo> {
     if NUMBER == 2 {
         k = "_Imposter"
     }
+    let mut m = 0;
+    if NUMBER == 2 {
+        m = 1
+    }
     sequences.push(SequenceInfo {
         name: ("Constant".to_owned() + k).to_string(),
         description: "Constant sequence".to_string(),
         parameters: 1,
-        sequences: 1,
+        sequences: m,
     });
     sequences.push(SequenceInfo {
         name: ("Lin Comb".to_owned() + KEYWORD).to_string(),
@@ -202,6 +207,7 @@ async fn send_get(url: String) -> Result<String, reqwest::Error> {
     return Ok(res);
 }
 
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     //
@@ -279,6 +285,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let mut condition = false;
 
                 let mut result : Vec<Option<f64>> = Vec::new();
+                
                 match (method, path) {
                     (Method::GET, "/ping") => {
                         println!("****************************-BEGIN_REQUEST\n");
@@ -302,15 +309,57 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     (Method::POST, r) => {
                         // r is a path to some sequence in the project. For example r might be something like r = /sequence/Arithmetic
                         let seqs = sequences();
-                        let finding_sequence = seqs
+                        let mut finding_sequence = seqs
                             .iter()
                             .find(|&x| ("/sequence/".to_string() + &x.name) == r);
+                        let body = collect_body(req).await?;
+                        let request: SequenceRequest = serde_json::from_str(&body).unwrap();                       
+                        let seqs = sequences();
+                        let mut sgn_is_ok = true;
+                        let mut maybe_sgn_error = Vec::new();
+                        match finding_sequence {
+                            Some(_) => {
+                                for s in seqs {
+                                    if let Some(ref fs) = finding_sequence {
+                                        if s.name == fs.name {
+                                            // Check whether the signature on our server is correct....
+                                            
+                                            let no_parameters = s.parameters;
+                                            let no_sequence_parameters = s.sequences;
+                                            let no_requested_parameters = request.parameters.len() as u32;
+                                            let no_requested_sequence_parameters = request.sequences.len() as u32;
+                        
+                                            // Check that the signature of this 'found' sequence is the same as the requested signature....
+                                                      
+                                            if no_parameters != no_requested_parameters || no_sequence_parameters != no_requested_sequence_parameters {
+                                                finding_sequence = None;
+                                                sgn_is_ok = false;
+                                                let r_info = format!("Requested signature \n Number of parameters : {}\n Number of sequence parameters : {}\n\n", no_requested_parameters, no_requested_sequence_parameters);
+                                                let f_info = format!("The found signature \n Number of parameters : {}\n Number of sequence parameters : {}\n\n", no_parameters, no_sequence_parameters);
+                                                maybe_sgn_error.push(r_info);
+                                                maybe_sgn_error.push(f_info);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            None => (),
+                        }
+                        
                         match finding_sequence {
                             None => {
-                                let body = collect_body(req).await.unwrap();
-                                                
+                                
                                 println!("****************************-BEGIN_REQUEST\n");
-                                println!("Got a POST {} request. The desired sequence is not available on this server. Looking around the hood if anyone has it.\n", r);
+                                if sgn_is_ok {
+                                    println!("Got a POST {} request. The desired sequence is not available on this server. Looking around the hood if anyone has it.\n", r);
+                                } else {
+                                    println!("Got a POST {} request. The desired sequence is available on this server, but not with the requested signature.\n", r);
+                                    println!("The signaturs did not match.\n");
+                                    println!("{}", maybe_sgn_error[0]);
+                                    println!("{}", maybe_sgn_error[1]);
+                                    
+                                    println!(" Looking around the hood if anyone has it.\n");        
+                                }
                                 let all_projects : String = send_get(REGISTER.to_string()).await.unwrap();
                                 let all_projects: Vec<Project> = serde_json::from_str(&all_projects).unwrap();
                             'outer: for project in all_projects.iter() {
@@ -336,7 +385,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                                                 //let body = collect_body(req).await.unwrap();
                                                 
-                                                let request: SequenceRequest = serde_json::from_str(&body).unwrap();
                                                 
                                                 let no_requested_parameters = request.parameters.len() as u32;
                                                 let no_requested_sequence_parameters = request.sequences.len() as u32;
@@ -379,17 +427,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                                 } else {
                                     println!("Got a POST {} request. No server had this sequence. Returning 404.\n", r);
-                                    println!("----------END_FINDING\n");
+                                    
                                     println!("****************************-END_REQUEST\n");
                                     create_404()
                                 }
                             },
                             Some(s) if *s.name == ("Arithmetic".to_owned() + KEYWORD).to_string() => {
                                 println!("****************************-BEGIN_REQUEST\n");
-                                println!("Got a POST {} request. This sequence is available on this server. Returning the desired range.\n", r);
+                                println!("Got a POST {} request. This sequence is available on this server with the requested signature. Returning the desired range.\n", r);
                                 
-                                let body = collect_body(req).await?;
-                                let request: SequenceRequest = serde_json::from_str(&body).unwrap();
+                                
                                 let range = request.range;
                                 let seq =
                                     sequence::arithmetic::Arithmetic::new(request.parameters[0], request.parameters[1]);
@@ -407,10 +454,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             
                             Some(s) if *s.name == ("Constant".to_owned() + k).to_string() => {
                                 println!("****************************-BEGIN_REQUEST\n");
-                                println!("Got a POST {} request. This sequence is available on this server. Returning the desired range.\n", r);
+                                println!("Got a POST {} request. This sequence is available on this server with the requested signature. Returning the desired range.\n", r);
                                 
-                                let body = collect_body(req).await?;
-                                let request: SequenceRequest = serde_json::from_str(&body).unwrap();
+                                
                                 let range = request.range;
                                 let seq =
                                     sequence::constant::Constant::new(request.parameters[0]);
@@ -425,10 +471,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             }
                             Some(s) if *s.name == ("Lin Comb".to_owned() + KEYWORD).to_string() => {
                                 println!("****************************-BEGIN_REQUEST\n");
-                                println!("Got a POST {} request. This sequence is available on this server. Returning the desired range.\n", r);
+                                println!("Got a POST {} request. This sequence is available on this server with the requested signature. Returning the desired range.\n", r);
                                 
-                                let body = collect_body(req).await?;
-                                let request: SequenceRequest = serde_json::from_str(&body).unwrap();
+                                
                                 let range = request.range;
                                 let mut sequences : Vec<& dyn Sequence<f64>> = vec![];
                                 
