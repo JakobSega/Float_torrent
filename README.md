@@ -1,4 +1,4 @@
-### Float_torrent
+# Float_torrent
 
 In this project we desired to write servers, which can handle computations regarding sequences.
 
