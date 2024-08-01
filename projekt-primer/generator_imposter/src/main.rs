@@ -1,8 +1,12 @@
 use std::net::SocketAddr;
+use std::env;
+use std::string::String;
+use std::vec::Vec;
 
 use bytes::Bytes;
 use http_body_util::{combinators::BoxBody, BodyExt, Empty, Full};
 use hyper::body::Incoming;
+use hyper::http::request::Parts;
 use hyper::server::conn::http1;
 use hyper::service::service_fn;
 use hyper::Error;
@@ -10,38 +14,28 @@ use hyper::{body::Body, Method, Request, Response, StatusCode};
 use hyper_util::rt::TokioIo;
 use tokio::net::TcpListener;
 use serde::{Deserialize, Serialize};
-use sequence::constant::Constant;
-use sequence::models::Sequence;
-use sequence::arithmetic::Arithmetic;
-use sequence::linearcombination::LinearCombination;
-use sequence::linearcombination;
+use auxiliary_functions::*;
+use auxiliary_functions::sequence::models::Sequence;
 
 
 const NUMBER: u8 = 1; // Change this to 1 or 2 as needed
 
-#[derive(Debug)]
-pub struct Server<'a> {
-    port : u16,
-    keyword : &'a str,
-    name : &'a str,
-}
-
-const NORMAL : Server = Server {
-    port : 12345,
-    keyword : "",
-    name : ""
+const NORMAL: Server = Server {
+    port: 0, // Placeholder, not used
+    keyword: "",
+    name: ""
 };
 
-const AMONG_US : Server = Server {
-    port : 12346,
-    keyword : "_Imposter",
-    name : " & AmongUs"
+const AMONG_US: Server = Server {
+    port: 0, // Placeholder, not used
+    keyword: "_Imposter",
+    name: " & AmongUs"
 };
 
-const ELVES : Server = Server {
-    port : 12347,
-    keyword : "_Elves",
-    name : " & Elves"
+const ELVES: Server = Server {
+    port: 0, // Placeholder, not used
+    keyword: "_Elves",
+    name: " & Elves"
 };
 
 
@@ -69,35 +63,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     if NUMBER == 2 {
         k = "_Imposter"
     }
-    //let scalers = vec![2.0, 3.0, 1.5];
-    //let scalers2 = scalers.clone();
-    //let s1 = Arithmetic::new(1.2, 2.6);
-    //let s2 = Constant::new(5.0);
-    //let s1 : &dyn Sequence<f64> = &s1;
-    //let s2 : &dyn Sequence<f64> = &s2;
-    //let indeksi : Vec<usize> = vec![1, 2, 3];
-    
-    //let s3t: &dyn Sequence<i64> = &s3_
-    //let lin_primer = linearcombination::linear_combination(vec![Box::new(s1), Box::new(s2)], scalers);
-    //println!("{}", lin_primer.name());
-    //for k in indeksi {
-    //    println!("Summing the {k}-th");
-    //    let od_konstantnega = s2.k_th(k);
-    //    let od_aritmeticnega = s1.k_th(k);
-    //    println!("{:?} * 1.0 + {:?} * {:?} + {:?} * {:?} = {:?}", scalers2[0], scalers2[1], od_aritmeticnega, scalers2[2], od_konstantnega, lin_primer.k_th(k));
-    //}
-    //generator::my_fun();
-    //let primer = Constant::new(1);
-    //println!("{:?}", primer);
-    //let range = Range {
-    //    from : 3,
-    //    to : 6,
-    //    step : 1
-    //};
-    //let r = primer.range(range);
-    //println!("{:?}", r);
-    //
-    let addr: SocketAddr = ([127, 0, 0, 1], PORT).into();
+
+    // Read the port number from command-line arguments
+    let args: Vec<String> = env::args().collect();
+    if args.len() < 2 {
+        eprintln!("Usage: {} <port>", args[0]);
+        return Err("Port number not provided".into());
+    }
+    let port: u16 = args[1].parse().expect("Invalid port number");
+
+    let addr: SocketAddr = ([127, 0, 0, 1], port).into();
 
     let b = send_get("http://127.0.0.1:7878/project".to_string()).await?;
     println!("HERE {}", b);
@@ -220,7 +195,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     
                                     let url_for_get : String = format!("http://{}:{}/sequence", project.ip, project.port);
                                     
-                                    if project.port != PORT {
+                                    if project.port != port {
                                         let sequences_in_this_project = send_get(url_for_get).await.unwrap();
                                         let sequences_in_this_project : Vec<SequenceInfo> = serde_json::from_str(&sequences_in_this_project).unwrap();
                                         for s in sequences_in_this_project {
