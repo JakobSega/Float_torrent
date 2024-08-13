@@ -6,6 +6,8 @@ use serde::{Deserialize, Serialize};
 use reqwest;
 use std::string::String;
 use std::vec::Vec;
+use dotenv::dotenv;
+use std::env;
 
 // Module declarations
 pub mod expression {
@@ -20,6 +22,7 @@ pub mod sequence {
     pub mod linearcombination;
     pub mod models;
     pub mod shifted;
+    pub mod story;
 }
 
 const NUMBER: u8 = 0; // Change this to 1 or 2 as needed
@@ -92,6 +95,11 @@ pub struct SequenceInfo {
     pub description: String,
     pub parameters: u32,
     pub sequences: u32,
+}
+
+pub fn get_groq_api_key() -> String {
+    dotenv().ok(); // Load environment variables from .env file
+    env::var("GROQ_API_KEY").expect("GROQ_API_KEY not found in environment variables")
 }
 
 pub fn sequences() -> Vec<SequenceInfo> {

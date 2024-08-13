@@ -64,6 +64,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         k = "_Imposter"
     }
 
+    let api_key = get_groq_api_key();
+
     // Read the port number from command-line arguments
     let args: Vec<String> = env::args().collect();
     if args.len() < 2 {

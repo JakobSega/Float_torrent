@@ -21,7 +21,7 @@ pub fn shifted_sequence(
 
 impl<T> Sequence<T> for Shifted<'_, T>{ 
     fn name(&self) -> String {
-        format!("Shifted sequence. Its base sequence is {}. Its shift it {}", (self.base_sequence).name(), self.shift)
+        format!("Shifted sequence. Its base sequence is {}. Its shift is {}", (self.base_sequence).name(), self.shift)
     }
 
     fn start(&self) -> T {
@@ -35,6 +35,6 @@ impl<T> Sequence<T> for Shifted<'_, T>{
     }
 
     fn contains(&self, item: T) -> bool {
-        true
+        self.base_sequence.contains(item)
     }
 }
