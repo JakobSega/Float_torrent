@@ -34,7 +34,7 @@ impl<T> Sequence<T> for Shifted<'_, T>{
         (self.base_sequence).k_th(self.shift + k)
     }
 
-    fn contains(&self, _item: T) -> bool {
-        true
+    fn contains(&self, item: T) -> bool {
+        self.base_sequence.contains(item)
     }
 }
