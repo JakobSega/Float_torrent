@@ -64,10 +64,10 @@ static MY: Server = select_server(NUMBER);
 
 
 
-static PORT: u16 = MY.port;
-
-
-static KEYWORD : &str = MY.keyword;
+//static PORT: u16 = MY.port;
+//
+//
+//static KEYWORD : &str = MY.keyword;
 
 
 //static NAME : &str = MY.name;
@@ -848,7 +848,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     //let mut use_args = false;
 
     // Access individual arguments
-    let mut my_project = get_project(MY);
+    let mut my_project = get_project(&MY);
     
     let mut my_port = my_project.port;
     let mut my_ip = my_project.ip;
@@ -880,7 +880,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let addr: SocketAddr = (ip_array, my_port).into();
     
-    my_project = get_project_new(my_ip.clone(), my_port);
+    my_project = get_project_new(my_ip.clone(), my_port, &MY);
     let reg_link = ("http://".to_owned() + &reg_ip.to_owned() + ":7878").to_string();
 
     let b = send_get((reg_link.clone() + "/project").to_string()).await?;
@@ -901,7 +901,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let listener = TcpListener::bind(addr).await?;
     println!("Listening on http://{}", addr);
-    let proj_name = get_project(MY).name;
+    let proj_name = get_project(&MY).name;
     println!("Server name : {}", proj_name);
 
     let create_404 = || {
@@ -936,7 +936,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             println!("****************************-END_REQUEST\n");
                             Ok::<_, Error>(Response::new(full(
                             
-                                serde_json::to_string(&get_project(MY)).unwrap(),
+                                serde_json::to_string(&get_project(&MY)).unwrap(),
                             )))
                         },
                         (Method::GET, "/sequence") => {
@@ -944,7 +944,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             println!("****************************-BEGIN_REQUEST\n");
                             println!("Got a GET /sequence request. Sending a list of my sequences.\n");
                             println!("****************************-END_REQUEST\n");
-                            let sequences = sequences();
+                            let sequences = sequences(&MY, NUMBER);
                             Ok(Response::new(full(
                                 serde_json::to_string(&sequences).unwrap(),
                             )))
@@ -954,11 +954,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             let body = collect_body(req).await.unwrap();
                             let ip_vec_ = vec![f1, f2, f3, f4];
                             let my_ip_ = ip_vec_to_ip(ip_vec_);
-                            let my_project_ = get_project_new(my_ip_, my_port);
+                            let my_project_ = get_project_new(my_ip_, my_port, &MY);
                             let my_url_ = format!("http://{}:{}", my_project_.ip, my_project_.port);
                             let v = my_url_.as_str();
                             let mut error_message = Box::new("Error".to_string());
-                            let x = handle_post(&mut error_message,r, condition, v, body).await;
+                            let x = handle_post(&mut error_message,r, condition, v, body, &MY, NUMBER).await;
                             let y = Pin::into_inner(Box::pin(x));
 
                             match *y {
