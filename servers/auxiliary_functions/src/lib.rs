@@ -29,7 +29,7 @@ pub fn string_to_u16(s: &String) -> Result<u16, ParseIntError> {
     s.parse::<u16>()
 }
 
-const NUMBER: u8 = 0; // Change this to 1 or 2 as needed. 1 is the Imposter server and 2 is the Elves server.
+//const NUMBER: u8 = 0; // Change this to 1 or 2 as needed. 1 is the Imposter server and 2 is the Elves server.
 pub const NORMAL : Server = Server {
     port : 12345,
     keyword : "",
@@ -46,7 +46,7 @@ pub const ELVES : Server = Server {
     name : " & Elves"
 };
 
-static MY: Server = select_server(NUMBER);
+//static MY: Server = select_server(NUMBER);
 
 pub const fn select_server<'a>(number: u8) -> Server<'a> {
     match number {
@@ -56,9 +56,9 @@ pub const fn select_server<'a>(number: u8) -> Server<'a> {
         _ => NORMAL, // Default to NORMAL if NUMBER is out of range
     }
 }
-static PORT: u16 = MY.port;
-static KEYWORD : &str = MY.keyword;
-static NAME : &str = MY.name;
+//static server.port: u16 = MY.port;
+//static server.keyword : &str = MY.keyword;
+//static server.name : &str = MY.name;
 
 const REGISTER : &str =  "http://127.0.0.1:7878/project";
 
@@ -148,21 +148,21 @@ pub fn get_groq_api_key() -> String {
     env::var("GROQ_API_KEY").expect("GROQ_API_KEY not found in environment variables")
 }
 
-pub fn sequences() -> Vec<SequenceInfo> {
+pub fn sequences(server: &Server, number: u8) -> Vec<SequenceInfo> {
     let mut sequences = Vec::new();
     sequences.push(SequenceInfo {
-        name: ("Arithmetic".to_owned() + KEYWORD).to_string(),
+        name: ("Arithmetic".to_owned() + server.keyword).to_string(),
         description: "Arithmetic sequence. The first parameter is the starting element, the second is the difference. So a_n = a_o + n * d.".to_string(),
         parameters: 2,
         sequences: 0,
     });
     //V primeru serverja 'Elves' hočemo, da ima ime konstanega zaporedja enako kot ime konstantnega na serverju AmongUs, da prečekiramo, da vse deluje ok....
-    let mut k = KEYWORD;
-    if NUMBER == 2 {
+    let mut k = server.keyword;
+    if number == 2 {
         k = "_Imposter"
     }
     let mut m = 0;
-    if NUMBER == 2 {
+    if number == 2 {
         m = 1
     }
     sequences.push(SequenceInfo {
@@ -172,61 +172,61 @@ pub fn sequences() -> Vec<SequenceInfo> {
         sequences: m,
     });
     sequences.push(SequenceInfo {
-        name: ("LinearCombination".to_owned() + KEYWORD).to_string(),
+        name: ("LinearCombination".to_owned() + server.keyword).to_string(),
         description: "LinearCombination accepts 3 scaler parameters : l_0, l_1, l_2 and 2 sequence parameters : (a_n), (b_n). This sequence is then defined as c_n = l_0 + l_1 * a_n + l_2 * b_n".to_string(),
         parameters: 3,
         sequences: 2,
     });
     sequences.push(SequenceInfo {
-        name: ("Sum".to_owned() + KEYWORD).to_string(),
+        name: ("Sum".to_owned() + server.keyword).to_string(),
         description: "Sum accepts two sequence parameters : (a_n) and (b_n). The sum is then defined by c_n = a_n + b_n".to_string(),
         parameters: 0,
         sequences: 2,
     });
     sequences.push(SequenceInfo {
-        name: ("Product".to_owned() + KEYWORD).to_string(),
+        name: ("Product".to_owned() + server.keyword).to_string(),
         description: "Product accepts 2 sequence parameters : (a_n) and (b_n). The product is then defined by c_n = a_n * b_n".to_string(),
         parameters: 0,
         sequences: 2,
     });
     sequences.push(SequenceInfo {
-        name: ("Drop".to_owned() + KEYWORD).to_string(),
+        name: ("Drop".to_owned() + server.keyword).to_string(),
         description: "Drop takes 1 parameter i and 1 sequence parameter (a_n). The drop is then defined by c_n = a_(n + i)".to_string(),
         parameters: 1,
         sequences: 1,
     });
     sequences.push(SequenceInfo {
-        name: ("Geometric".to_owned() + KEYWORD).to_string(),
+        name: ("Geometric".to_owned() + server.keyword).to_string(),
         description: "Geometric sequence take 2 scaler parameters : a and q. The geometric sequence is then defined by c_n = a * q^n.".to_string(),
         parameters: 2,
         sequences: 0,
     });
     sequences.push(SequenceInfo {
-        name: ("Fibonacci".to_owned() + KEYWORD).to_string(),
+        name: ("Fibonacci".to_owned() + server.keyword).to_string(),
         description: "Fibonacci takes two scaler parameters a_0 and a_1. The sequence is defined recursively as : c_0 = a_0, c_1 = a_1 and c_n = c_(n - 1) + c_(n - 2), where n > 1.".to_string(),
         parameters: 2,
         sequences: 0,
     });
     sequences.push(SequenceInfo {
-        name: ("EMSequence".to_owned() + KEYWORD).to_string(),
+        name: ("EMSequence".to_owned() + server.keyword).to_string(),
         description: "Euler-Mascheroni sequence approximation takes no parameters. It is an approximation of the Euler-Mascheroni constant. The sequence is defined by c_n = H(n) - log(n), where H(n) is the partial sum of the harmonic series: H(n) = 1 + 1/2 + 1/3 + ... + 1/n.".to_string(),
         parameters: 0,
         sequences: 0,
     });
     sequences.push(SequenceInfo {
-        name: ("NthRootSequence".to_owned() + KEYWORD).to_string(),
+        name: ("NthRootSequence".to_owned() + server.keyword).to_string(),
         description: ("NthRootSequence takes 1 sequence parameter (a_n). It is defined by c_n = (a_n)^(1/n)").to_string(),
         parameters: 0,
         sequences: 1,
     });
     sequences.push(SequenceInfo {
-        name: ("Hofstadter".to_owned() + KEYWORD).to_string(),
+        name: ("Hofstadter".to_owned() + server.keyword).to_string(),
         description: ("Hofstadter sequence takes no parameters. It is defined recursively : G_0 = 0 and G_n =n − G_(G_(n - 1)) wher n > 0.").to_string(),
         parameters: 0,
         sequences: 0,
     });
     sequences.push(SequenceInfo {
-        name: ("Recaman".to_owned() + KEYWORD).to_string(),
+        name: ("Recaman".to_owned() + server.keyword).to_string(),
         description: ("Recaman sequence takes no parameters. It is defined as follows: c_0 = 0 and let n_n = a_(n - 1) - n and p_n = a_(n - 1) + n. Then a_n = n_n if n_n is positive and has not yet occurd in the sequence, otherwise a_n = p_n.").to_string(),
         parameters: 0,
         sequences: 0,
@@ -240,17 +240,17 @@ pub fn sequences() -> Vec<SequenceInfo> {
     sequences
 }
 
-pub fn get_project() -> Project {
+pub fn get_project(server: &Server) -> Project {
     return Project {
-        name: ("Binarni Banditi".to_owned() + NAME).to_string(),
+        name: ("Binarni Banditi".to_owned() + server.name).to_string(),
         ip: "127.0.0.1".to_string(),
-        port: PORT,
+        port: server.port,
     }
 }
 
-pub fn get_project_new(ip: String, port: u16) -> Project {
+pub fn get_project_new(ip: String, port: u16, server: &Server) -> Project {
     Project {
-        name: ("Binarni Banditi".to_owned() + NAME).to_string(),
+        name: ("Binarni Banditi".to_owned() + server.name).to_string(),
         ip,
         port,
     }
@@ -293,7 +293,7 @@ pub async fn send_get(url: String) -> Result<String, reqwest::Error> {
     return Ok(res);
 }
 
-pub async fn search_generators(r :&str, request : SequenceRequest, body : String, mut condition : bool, sgn_is_ok : bool, maybe_sgn_error : Vec<String>) -> (Vec<Option<f64>>, bool) {
+pub async fn search_generators<'a>(r :&str, request : SequenceRequest, body : String, mut condition : bool, sgn_is_ok : bool, maybe_sgn_error : Vec<String>, server: &Server<'a>) -> (Vec<Option<f64>>, bool) {
     //r is a path to the sequence on the server...
     let mut result : Vec<Option<f64>> = Vec::new();
     println!("****************************-BEGIN_REQUEST\n");
@@ -313,7 +313,7 @@ pub async fn search_generators(r :&str, request : SequenceRequest, body : String
         
         let url_for_get : String = format!("http://{}:{}/sequence", project.ip, project.port);
         
-        if project.port != PORT {
+        if project.port != server.port {
             let sequences_in_this_project = send_get(url_for_get).await.unwrap();
             let sequences_in_this_project : Vec<SequenceInfo> = serde_json::from_str(&sequences_in_this_project).unwrap();
             for s in sequences_in_this_project {
@@ -447,23 +447,25 @@ pub async fn handle_post(
     condition: bool,
     my_url: &str,
     body: String,
+    server: &Server,
+    number: u8
 ) -> Option<Vec<Option<f64>>>  {
     
-    let mut k = KEYWORD;
-    if NUMBER == 2 {
+    let mut k = server.keyword;
+    if number == 2 {
         k = "_Imposter"
     };
     
     
     // r is a path to some sequence in the project. For example r might be something like r = /sequence/Arithmetic
-    let seqs = sequences();
+    let seqs = sequences(server, number);
     let mut finding_sequence = seqs
         .iter()
         .find(|&x| ("/sequence/".to_string() + &x.name) == r);
     
     let request: SequenceRequest = serde_json::from_str(&body).unwrap();                       
     
-    let seqs = sequences();
+    let seqs = sequences(server, number);
     let mut sgn_is_ok = true;
     let mut maybe_sgn_error = Vec::new();
     match finding_sequence {
@@ -497,7 +499,7 @@ pub async fn handle_post(
     
     match finding_sequence {
         None => {
-            let (result, condition) = search_generators(r, request, body, condition, sgn_is_ok, maybe_sgn_error).await;
+            let (result, condition) = search_generators(r, request, body, condition, sgn_is_ok, maybe_sgn_error, server).await;
             println!("{}", condition);
             if condition {
                 println!("Returning the desired range.\n");
@@ -518,7 +520,7 @@ pub async fn handle_post(
                 None
             }
         },
-        Some(s) if *s.name == ("Geometric".to_owned() + KEYWORD).to_string() => {
+        Some(s) if *s.name == ("Geometric".to_owned() + server.keyword).to_string() => {
             println!("****************************-BEGIN_REQUEST\n");
             println!("Got a POST {} request. This sequence is available on this server with the requested signature. Returning the desired range.\n", r);
             
@@ -536,7 +538,7 @@ pub async fn handle_post(
             let result = seq.range(range);
             Some(result)
         }
-        Some(s) if *s.name == ("Fibonacci".to_owned() + KEYWORD).to_string() => {
+        Some(s) if *s.name == ("Fibonacci".to_owned() + server.keyword).to_string() => {
             println!("****************************-BEGIN_REQUEST\n");
             println!("Got a POST {} request. This sequence is available on this server with the requested signature. Returning the desired range.\n", r);
             
@@ -554,7 +556,7 @@ pub async fn handle_post(
             let result = seq.range(range);
             Some(result)
         }
-        Some(s) if *s.name == ("Arithmetic".to_owned() + KEYWORD).to_string() => {
+        Some(s) if *s.name == ("Arithmetic".to_owned() + server.keyword).to_string() => {
             println!("****************************-BEGIN_REQUEST\n");
             println!("Got a POST {} request. This sequence is available on this server with the requested signature. Returning the desired range.\n", r);
             
@@ -591,7 +593,7 @@ pub async fn handle_post(
             let result = seq.range(range);
             Some(result)
         }
-        Some(s) if *s.name == ("EMSequence".to_owned() + KEYWORD).to_string() => {
+        Some(s) if *s.name == ("EMSequence".to_owned() + server.keyword).to_string() => {
             println!("****************************-BEGIN_REQUEST\n");
             println!("Got a POST {} request. This sequence is available on this server with the requested signature. Returning the desired range.\n", r);
             
@@ -608,7 +610,7 @@ pub async fn handle_post(
             let result = seq.range(range);
             Some(result)
         }
-        Some(s) if *s.name == ("Hofstadter".to_owned() + KEYWORD).to_string() => {
+        Some(s) if *s.name == ("Hofstadter".to_owned() + server.keyword).to_string() => {
             println!("****************************-BEGIN_REQUEST\n");
             println!("Got a POST {} request. This sequence is available on this server with the requested signature. Returning the desired range.\n", r);
             
@@ -625,7 +627,7 @@ pub async fn handle_post(
             let result = seq.range(range);
             Some(result)
         }
-        Some(s) if *s.name == ("Recaman".to_owned() + KEYWORD).to_string() => {
+        Some(s) if *s.name == ("Recaman".to_owned() + server.keyword).to_string() => {
             println!("****************************-BEGIN_REQUEST\n");
             println!("Got a POST {} request. This sequence is available on this server with the requested signature. Returning the desired range.\n", r);
             
@@ -643,7 +645,7 @@ pub async fn handle_post(
             Some(result)
         }
 
-        Some(s) if *s.name == ("LinearCombination".to_owned() + KEYWORD).to_string() => {
+        Some(s) if *s.name == ("LinearCombination".to_owned() + server.keyword).to_string() => {
             println!("****************************-BEGIN_REQUEST\n");
             println!("Got a POST {} request. This sequence is available on this server with the requested signature. Returning the desired range.\n", r);
             
@@ -652,12 +654,12 @@ pub async fn handle_post(
             let (lambda0, lambda1, lambda2) = (request.parameters[0], request.parameters[1], request.parameters[2]) ;
             let s1 = &request.sequences[0];
             let (path1, cond1, body1) = from_seq_syntax_to_recursive_call((**s1).clone(), range);
-            let result1 = Box::pin(handle_post(error_message,&path1, cond1, my_url, body1));
+            let result1 = Box::pin(handle_post(error_message,&path1, cond1, my_url, body1, server, number));
             let vec1 = *Pin::into_inner(Box::pin(result1.await));
 
             let s2 = &request.sequences[1];
             let (path2, cond2, body2) = from_seq_syntax_to_recursive_call((**s2).clone(), range);
-            let result2 = Box::pin(handle_post(error_message,&path2, cond2, my_url, body2));
+            let result2 = Box::pin(handle_post(error_message,&path2, cond2, my_url, body2, server, number));
             let vec2 = *Pin::into_inner(Box::pin(result2.await));
            
             match (vec1, vec2) {
@@ -680,7 +682,7 @@ pub async fn handle_post(
                 }
             }
          }
-         Some(s) if *s.name == ("Sum".to_owned() + KEYWORD).to_string() => {
+         Some(s) if *s.name == ("Sum".to_owned() + server.keyword).to_string() => {
             println!("****************************-BEGIN_REQUEST\n");
             println!("Got a POST {} request. This sequence is available on this server with the requested signature. Returning the desired range.\n", r);
             
@@ -690,12 +692,12 @@ pub async fn handle_post(
             
             let s1 = &request.sequences[0];
             let (path1, cond1, body1) = from_seq_syntax_to_recursive_call((**s1).clone(), range);
-            let result1 = Box::pin(handle_post(error_message,&path1, cond1, my_url, body1));
+            let result1 = Box::pin(handle_post(error_message,&path1, cond1, my_url, body1, server, number));
             let vec1 = *Pin::into_inner(Box::pin(result1.await));
 
             let s2 = &request.sequences[1];
             let (path2, cond2, body2) = from_seq_syntax_to_recursive_call((**s2).clone(), range);
-            let result2 = Box::pin(handle_post(error_message,&path2, cond2, my_url, body2));
+            let result2 = Box::pin(handle_post(error_message,&path2, cond2, my_url, body2, server, number));
             let vec2 = *Pin::into_inner(Box::pin(result2.await));
             match (vec1, vec2) {
                 (Some(v1), Some(v2)) => {
@@ -716,7 +718,7 @@ pub async fn handle_post(
                 }
             }
          }
-         Some(s) if *s.name == ("Product".to_owned() + KEYWORD).to_string() => {
+         Some(s) if *s.name == ("Product".to_owned() + server.keyword).to_string() => {
             println!("****************************-BEGIN_REQUEST\n");
             println!("Got a POST {} request. This sequence is available on this server with the requested signature. Returning the desired range.\n", r);
             
@@ -726,12 +728,12 @@ pub async fn handle_post(
             
             let s1 = &request.sequences[0];
             let (path1, cond1, body1) = from_seq_syntax_to_recursive_call((**s1).clone(), range);
-            let result1 = Box::pin(handle_post(error_message,&path1, cond1, my_url, body1));
+            let result1 = Box::pin(handle_post(error_message,&path1, cond1, my_url, body1, server, number));
             let vec1 = *Pin::into_inner(Box::pin(result1.await));
 
             let s2 = &request.sequences[1];
             let (path2, cond2, body2) = from_seq_syntax_to_recursive_call((**s2).clone(), range);
-            let result2 = Box::pin(handle_post(error_message,&path2, cond2, my_url, body2));
+            let result2 = Box::pin(handle_post(error_message,&path2, cond2, my_url, body2, server, number));
             let vec2 = *Pin::into_inner(Box::pin(result2.await));
             match (vec1, vec2) {
                 (Some(v1), Some(v2)) => {
@@ -752,7 +754,7 @@ pub async fn handle_post(
                 }
             }
          }
-         Some(s) if *s.name == ("Drop".to_owned() + KEYWORD).to_string() => {
+         Some(s) if *s.name == ("Drop".to_owned() + server.keyword).to_string() => {
             println!("****************************-BEGIN_REQUEST\n");
             println!("Got a POST {} request. This sequence is available on this server with the requested signature. Returning the desired range.\n", r);
             
@@ -777,7 +779,7 @@ pub async fn handle_post(
                 
                 let s1 = &request.sequences[0];
                 let (path1, cond1, body1) = from_seq_syntax_to_recursive_call((**s1).clone(), range);
-                let result1 = Box::pin(handle_post(error_message,&path1, cond1, my_url, body1));
+                let result1 = Box::pin(handle_post(error_message,&path1, cond1, my_url, body1, server, number));
                 let vec1 = *Pin::into_inner(Box::pin(result1.await));
                 match &vec1 {
                     Some(v) => {
@@ -792,14 +794,14 @@ pub async fn handle_post(
                 vec1
             }
          }
-         Some(s) if *s.name == ("NthRootSequence".to_owned() + KEYWORD).to_string() => {
+         Some(s) if *s.name == ("NthRootSequence".to_owned() + server.keyword).to_string() => {
             println!("****************************-BEGIN_REQUEST\n");
             println!("Got a POST {} request. This sequence is available on this server with the requested signature. Returning the desired range.\n", r);
             
             let range = request.range;
             let s1 = &request.sequences[0];
             let (path1, cond1, body1) = from_seq_syntax_to_recursive_call((**s1).clone(), range);
-            let result1 = Box::pin(handle_post(error_message,&path1, cond1, my_url, body1));
+            let result1 = Box::pin(handle_post(error_message,&path1, cond1, my_url, body1, server, number));
             let vec1 = *Pin::into_inner(Box::pin(result1.await));
             let mut complex_res = false;
 
@@ -860,7 +862,7 @@ pub async fn handle_post(
             // Process the input sequence (e.g., narrative elements)
             let s1 = &request.sequences[0];
             let (path1, cond1, body1) = from_seq_syntax_to_recursive_call(s1.as_ref().clone(), range);
-            let result1 = Box::pin(handle_post(error_message, &path1, cond1, my_url, body1));
+            let result1 = Box::pin(handle_post(error_message, &path1, cond1, my_url, body1, server, number));
             let vec1 = *Pin::into_inner(Box::pin(result1.await));
             
             match vec1 {
