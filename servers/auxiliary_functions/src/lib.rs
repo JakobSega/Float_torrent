@@ -92,7 +92,7 @@ pub mod sequence {
     pub mod recaman;
     pub mod shifted;
     pub mod story;
-
+    pub mod ai;
     
 }
 

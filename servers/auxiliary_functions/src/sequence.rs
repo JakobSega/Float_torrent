@@ -10,5 +10,5 @@ pub mod recaman;
 pub mod shifted;
 pub mod linearcombination;
 pub mod story;
-
+pub mod ai;
 
