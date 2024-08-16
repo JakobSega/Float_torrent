@@ -1,118 +1,111 @@
-use crate::sequence::models::{Sequence, Range};
-
+use crate::sequence::models::Sequence;
 use linfa::prelude::*;
 use linfa_linear::{LinearRegression, FittedLinearRegression};
 use ndarray::Array2;
 
 pub struct AiModel {
     model: Option<FittedLinearRegression<f64>>,
-    training_range: Range,
 }
 
 impl AiModel {
-    pub fn new(training_range: Range) -> Self {
+    pub fn new() -> Self {
         AiModel {
             model: None,
-            training_range,
         }
     }
 
-    pub fn train(&mut self, input_sequence: &Vec<f64>) {
-        let num_samples = (input_sequence.len() as u64 - self.training_range.from) as usize;
-        let num_features = (self.training_range.to - self.training_range.from) as usize;
+    pub fn train(&mut self, input_data: &[Option<f64>]) {
+        let num_samples = input_data.len() - 1; // Adjusted for simplicity
+        let num_features = 1; // For simplicity; adjust if needed based on your actual features
+
         let mut x_train = Array2::<f64>::zeros((num_samples, num_features));
         let mut y_train = Array2::<f64>::zeros((num_samples, 1));
 
         for i in 0..num_samples {
-            for j in 0..num_features {
-                x_train[[i, j]] = input_sequence[(i + j) as usize];
-            }
-            y_train[[i, 0]] = input_sequence[(i + num_features) as usize];
+            x_train[[i, 0]] = input_data[i].unwrap_or_default();
+            y_train[[i, 0]] = input_data[i + 1].unwrap_or_default(); // Simple example
         }
 
-        // Create the DatasetBase
         let dataset = Dataset::new(x_train, y_train);
-
-        // Fit the model using the DatasetBase
         let model = LinearRegression::default();
         self.model = Some(model.fit(&dataset).expect("Failed to fit model"));
     }
 
-    pub fn predict(&self, input_sequence: &Vec<f64>) -> Vec<f64> {
-        let num_features = (self.training_range.to - self.training_range.from) as usize;
-        let mut predictions = Vec::new();
+    pub fn predict(&self, input_data: &[Option<f64>], num_predictions: usize) -> Vec<Option<f64>> {
+        let mut predictions = Vec::with_capacity(num_predictions);
 
         if let Some(ref fitted_model) = self.model {
-            for i in 0..(input_sequence.len() as u64 - self.training_range.to + 1) as usize {
+            for i in 0..(input_data.len() - 1) {
                 let x_pred = Array2::from_shape_vec(
-                    (1, num_features),
-                    input_sequence[i..i + num_features].to_vec(),
-                )
-                .expect("Failed to create prediction array");
+                    (1, 1), // Adjust shape if needed
+                    vec![input_data[i].unwrap_or_default()],
+                ).expect("Failed to create prediction array");
 
                 let y_pred = fitted_model.predict(&x_pred);
-                predictions.push(y_pred[[0]]);
+                predictions.push(Some(y_pred[[0]]));
+
+                if predictions.len() >= num_predictions {
+                    break;
+                }
             }
+
+            // If there are fewer predictions than requested, fill the rest with `None`
+            while predictions.len() < num_predictions {
+                predictions.push(None);
+            }
+        } else {
+            // If the model is not trained, return `None` for all requested predictions
+            predictions.extend(vec![None; num_predictions]);
         }
 
         predictions
     }
 }
 
-pub struct Ai<'a> {
-    input_sequence: Box<&'a dyn Sequence<f64>>,
-    training_range: Range,
-    prediction: Vec<f64>,
-    model: AiModel,
+
+
+pub struct Ai {
+    pub input_sequence: Vec<Option<f64>>,
+    pub prediction: Vec<Option<f64>>,
+    pub model: AiModel,
 }
 
-impl<'a> Ai<'a> {
-    pub fn new(input_sequence: Box<&'a dyn Sequence<f64>>, training_range: Range) -> Self {
-        let mut ai_model = AiModel::new(training_range.clone());
+impl Ai {
+    pub fn new(input_sequence: Vec<Option<f64>>, num_predictions: usize) -> Self {
+        let mut ai_model = AiModel::new();
 
-        // Convert the input sequence into a Vec<f64> for training
-        let input_data = (0..training_range.to as usize)
-            .filter_map(|i| input_sequence.k_th(i))
-            .collect::<Vec<f64>>();
+        // Train the model with the input sequence
+        ai_model.train(&input_sequence);
 
-        // Train the model
-        ai_model.train(&input_data);
-
-        // Predict the sequence
-        let prediction = ai_model.predict(&input_data);
+        // Get predictions based on the input sequence and number of predictions
+        let prediction = ai_model.predict(&input_sequence, num_predictions);
 
         Ai {
             input_sequence,
-            training_range,
             prediction,
             model: ai_model,
         }
     }
 }
 
-impl<'a> Sequence<f64> for Ai<'a> {
+impl Sequence<f64> for Ai {
     fn name(&self) -> String {
         format!(
-            "AI Sequence based on {} elements of input sequence {} with {} predictions",
-            self.training_range.to - self.training_range.from,
-            self.input_sequence.name(),
+            "AI Sequence with {} elements and {} predictions",
+            self.input_sequence.len(),
             self.prediction.len()
         )
     }
 
     fn start(&self) -> f64 {
-        self.prediction[0]
+        self.prediction.get(0).copied().flatten().unwrap_or_default()
     }
 
     fn k_th(&self, k: usize) -> Option<f64> {
-        if k < self.prediction.len() {
-            Some(self.prediction[k])
-        } else {
-            None
-        }
+        self.prediction.get(k).and_then(|opt| *opt)
     }
 
     fn contains(&self, value: f64) -> bool {
-        self.prediction.contains(&value)
+        self.prediction.iter().any(|opt| opt == &Some(value))
     }
 }
