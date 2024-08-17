@@ -1,7 +1,6 @@
 use crate::sequence::models::Sequence;
 use smartcore::linalg::naive::dense_matrix::DenseMatrix;
 use smartcore::linear::linear_regression::LinearRegression as SmartcoreLinearRegression;
-//use ndarray::Array2;
 
 pub struct AiModel {
     model: Option<SmartcoreLinearRegression<f64, DenseMatrix<f64>>>,
@@ -43,19 +42,14 @@ impl AiModel {
         let mut predictions = Vec::with_capacity(num_predictions);
 
         if let Some(ref fitted_model) = self.model {
-            for i in 0..input_data.len() {
-                let x_pred = DenseMatrix::from_2d_vec(&vec![vec![input_data[i].unwrap_or_default()]]);
+            let mut last_value = input_data.last().unwrap_or(&None).unwrap_or_default();
+
+            for _ in 0..num_predictions {
+                let x_pred = DenseMatrix::from_2d_vec(&vec![vec![last_value]]);
                 let y_pred = fitted_model.predict(&x_pred).expect("Failed to predict");
 
-                predictions.push(Some(y_pred[0])); // y_pred is a vector, extract the first element
-
-                if predictions.len() >= num_predictions {
-                    break;
-                }
-            }
-
-            while predictions.len() < num_predictions {
-                predictions.push(None);
+                last_value = y_pred[0];
+                predictions.push(Some(last_value));
             }
         } else {
             predictions.extend(vec![None; num_predictions]);

@@ -64,6 +64,7 @@ let use_dynamic_port = if args.len() == 4 && args[1] == "dynamic" {
     let my_project = get_project(&MY);
     my_ip = my_project.ip.clone();
     reg_ip = "127.0.0.1".to_string();
+    my_port = my_project.port.clone();
     false
 } else {
     eprintln!("Invalid arguments passed.");

@@ -874,7 +874,7 @@ pub async fn handle_post(
             match vec1 {
                 Some(_v1) => {
                     // Use the new function to create a StorySequence
-                    let story_sequence = sequence::story::StorySequence::new(sequences.to_vec(), author, genre, &api_key).await;
+                    let story_sequence = sequence::story::StorySequence::new(sequences.to_vec(), author, genre).await;
             
                     println!("Generated story: {:?}\n", story_sequence.story);
                     println!("Encoded story in binary: {:?}\n", story_sequence.story);

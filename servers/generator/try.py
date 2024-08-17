@@ -1,364 +1,230 @@
 import requests
+
+# Fetch projects and initialize the database
 projects = requests.get("http://127.0.0.1:7878/project").json()
 db = {}
 
-
 for project in projects:
     name = project["name"]
-    db[name] = {"Info" : project, "Sequences" : {}}
-    url = "http://" + project["ip"] + ":" + str(project["port"]) + "/sequence"
+    db[name] = {"Info": project, "Sequences": {}}
+    url = f"http://{project['ip']}:{project['port']}/sequence"
     
     seqs = requests.get(url).json()
     for seq in seqs:
         seq_name = seq["name"]
         db[name]["Sequences"][seq_name] = seq
 
-print(db.keys())
-"""
-db izgleda nekoliko takole : 
+print("Available servers:", db.keys())
 
-{'Binarni Banditi & AmongUS': {'Info': {'name': 'Binarni Banditi & AmongUS', 'ip': '127.0.0.1', 'port': 12346}, 
-'Sequences': {
-    'Arithmetic_Imposter': {'name': 'Arithmetic_Imposter', 'description': 'Arithmetic sequence', 'parameters': 2, 'sequences': 0},
-    'Constant_Imposter': {'name': 'Constant_Imposter', 'description': 'Constant sequence', 'parameters': 1, 'sequences': 0}, 
-    'Lin Comb_Imposter': {'name': 'Lin Comb_Imposter', 'description': '', 'parameters': 3, 'sequences': 2}}}, 
-
-'Binarni Banditi & Elves': {'Info': {'name': 'Binarni Banditi & Elves', 'ip': '127.0.0.1', 'port': 12347}, 
-'Sequences': {
-    'Arithmetic_Elves': {'name': 'Arithmetic', 'description': 'Arithmetic sequence', 'parameters': 2, 'sequences': 0}, 
---->'Constant_Imposter': {'name': 'Constant', 'description': 'Constant sequence', 'parameters': 1, 'sequences': 1}, 
-    'Lin Comb_Elves': {'name': 'Lin Comb', 'description': '', 'parameters': 3, 'sequences': 2}}}},
-
-'Binarni Banditi': {'Info': {'name': 'Binarni Banditi', 'ip': '127.0.0.1', 'port': 12345}, 
-'Sequences': {
-    'Arithmetic': {'name': 'Arithmetic', 'description': 'Arithmetic sequence', 'parameters': 2, 'sequences': 0}, 
-    'Constant': {'name': 'Constant', 'description': 'Constant sequence', 'parameters': 1, 'sequences': 0}, 
-    'Lin Comb': {'name': 'Lin Comb', 'description': '', 'parameters': 3, 'sequences': 2}}}}
-"""
-#---> opozarja na primer, ko je isto zaporedje na dveh različnih serverjih. Dodatno - eno ima pravilno signaturo, drugo pa (tisto na Elves ima napačno signaturo...) 
-
-ZAP = "LinearCombination_Elves"
-SERVER = "Binarni Banditi"
-
-#Za definicijo ranga
-start = 0
-end = 2
-step = 1
-
-shift = 5
-
-#####################
-
+# Define request bodies
 def const_body(start, end, step, c):
-    body = {
-            "range": {
-                "from": start,
-                "to": end,
-                "step": step,
-            },
-            "parameters": [c],
-            "sequences": [
-            ],
-        }
-    return body
-
-def em_body(start, end, step):
-    body = {
-            "range": {
-                "from": start,
-                "to": end,
-                "step": step,
-            },
-            "parameters": [],
-            "sequences": [
-            ],
-        }
-    return body
-
-def hof_body(start, end, step):
-    body = {
-            "range": {
-                "from": start,
-                "to": end,
-                "step": step,
-            },
-            "parameters": [],
-            "sequences": [
-            ],
-        }
-    return body
-
-def rec_body(start, end, step):
-    body = {
-            "range": {
-                "from": start,
-                "to": end,
-                "step": step,
-            },
-            "parameters": [],
-            "sequences": [
-            ],
-        }
-    return body
+    return {
+        "range": {"from": start, "to": end, "step": step},
+        "parameters": [float(c)],  # Ensure parameter is float
+        "sequences": []
+    }
 
 def arit_body(start, end, step, a_0, d):
-    body = {
-            "range": {
-                "from": start,
-                "to": end,
-                "step": step,
-            },
-            "parameters": [a_0, d],
-            "sequences": [
-            ],
-        }
-    return body
-    
-def geo_body(start, end, step, a, q):
-    body = {
-            "range": {
-                "from": start,
-                "to": end,
-                "step": step,
-            },
-            "parameters": [a, q],
-            "sequences": [
-            ],
-        }
-    return body
-
-def nth_root_body(start, end, step, seq):
-    body = {
-        "range": {
-                "from": start,
-                "to": end,
-                "step": step,
-            },
-        "parameters": [],
-        "sequences": [seq
-        ],
-        
+    return {
+        "range": {"from": start, "to": end, "step": step},
+        "parameters": [float(a_0), float(d)],  # Ensure parameters are float
+        "sequences": []
     }
-    return body
+
+def geo_body(start, end, step, a, q):
+    return {
+        "range": {"from": start, "to": end, "step": step},
+        "parameters": [float(a), float(q)],  # Ensure parameters are float
+        "sequences": []
+    }
 
 def drop_body(start, end, step, shift, seq):
-    body = {
-        "range": {
-                "from": start,
-                "to": end,
-                "step": step,
-            },
-        "parameters": [shift],
-        "sequences": [seq
-        ],
-        
+    return {
+        "range": {"from": start, "to": end, "step": step},
+        "parameters": [float(shift)],  # Ensure parameter is float
+        "sequences": [seq]
     }
-    return body
-
-def fib_body(start, end, step, a, b):
-    body = {
-            "range": {
-                "from": start,
-                "to": end,
-                "step": step,
-            },
-            "parameters": [a, b],
-            "sequences": [
-            ],
-        }
-    return body
-##############################
 
 def lin_body(start, end, step, l_0, l_1, l_2, seq1, seq2):
-    lin_body = {
-        "range": {
-                "from": start,
-                "to": end,
-                "step": step,
-            },
-        "parameters": [l_0, l_1, l_2],
-        "sequences": [seq1, seq2
-        ],
-        
+    return {
+        "range": {"from": start, "to": end, "step": step},
+        "parameters": [float(l_0), float(l_1), float(l_2)],  # Ensure parameters are float
+        "sequences": [seq1, seq2]
     }
-    return lin_body
-
-def prod_body(start, end, step, seq1, seq2):
-    prod_body = {
-        "range": {
-                "from": start,
-                "to": end,
-                "step": step,
-            },
-        "parameters": [],
-        "sequences": [seq1, seq2
-        ],
-    }
-    return prod_body
-
-def sum_body(start, end, step, seq1, seq2):
-    sum_body = {
-        "range": {
-                "from": start,
-                "to": end,
-                "step": step,
-            },
-        "parameters": [],
-        "sequences": [seq1, seq2
-        ],
-        
-    }
-    return sum_body
-
-##############################
 
 def gen_seq(name, parameters, sequences):
-    body = {
-            "name" : name,
-            "parameters": parameters,
-            "sequences": sequences,
-        }
-    return body
+    return {
+        "name": name,
+        "parameters": [float(p) if isinstance(p, (int, float)) else p for p in parameters],
+        "sequences": sequences
+    }
 
-##############################
+def story_body(start, end, step, author, genre, seq):
+    return {
+        "range": {"from": start, "to": end, "step": step},
+        "parameters": [author, genre],  # Author and genre should be strings
+        "sequences": [seq]
+    }
 
+def ai_body(start, end, step, prediction_range, seq):
+    return {
+        "range": {"from": start, "to": end, "step": step},
+        "parameters": [float(prediction_range)],  # Ensure parameter is float
+        "sequences": [seq]
+    }
 
-gen_const = gen_seq(name = "Constant_Imposter", parameters = [4], sequences = [])
-# 4, 4, 4, 4, 4, 4, 4
-gen_arit = gen_seq(name = "Arithmetic", parameters = [10, 3], sequences = [])
-# 10, 13, 16, 19, 22, 25
-gen_hof = gen_seq(name = "Hofstadter_Elves", parameters = [], sequences = [])
-gen_lin = gen_seq(name = "LinearCombination_Imposter", parameters = [2, -1, 5], sequences = [gen_const, gen_arit])
-# 48, 63, 78, 92
+# Example sequences
+gen_const = gen_seq(name="Constant_Imposter", parameters=[4], sequences=[])
+gen_arit = gen_seq(name="Arithmetic", parameters=[10, 3], sequences=[])
+gen_hof = gen_seq(name="Hofstadter_Elves", parameters=[], sequences=[])
+gen_lin = gen_seq(name="LinearCombination_Imposter", parameters=[2, -1, 5], sequences=[gen_const, gen_arit])
 
-lin = lin_body(start, end, step, 2, 3, 20, gen_hof, gen_lin)
-# 974, 1274, 1574
-
-body = lin_body(start=start, end=end, step=step, l_0 = 43, l_1 = 11, l_2 = 23,
-                seq1 = gen_seq(name = "LinearCombination_Elves", parameters = [44, -10, -1], sequences = [
-                    gen_seq(name = "Geometric_Imposter", parameters = [3, 2], sequences = []),
-                    gen_seq(name="Arithmetic_Imposter", parameters = [-2, 10], sequences = []),
-                    ]),
-                seq2 = gen_seq(name = "Sum_Elves", parameters = [], sequences = [
-                    gen_seq(name = "Drop", parameters = [11], sequences = [
-                        gen_seq(name="Hofstadter", parameters = [], sequences = [])]),
-                    gen_seq(name = "Constant", parameters = [3.0], sequences = [])]))
+# Define the body for different sequence requests
+lin = lin_body(start=0, end=4, step=1, l_0=2, l_1=3, l_2=20, seq1=gen_hof, seq2=gen_lin)
 
 def send(ZAP, SERVER, body):
-    #Želimo poklicati SERVER in dobiti ZAP...
     project = db[SERVER]["Info"]
-    url = ("http://" + project["ip"] + ":" + str(project["port"]) + "/sequence/") + ZAP
- 
-      
-    r = requests.post(url, json=body)
+    url = f"http://{project['ip']}:{project['port']}/sequence/{ZAP}"
+    try:
+        r = requests.post(url, json=body)
+        r.raise_for_status()  # Raises an HTTPError if the HTTP request returned an unsuccessful status code
+    except requests.RequestException as e:
+        print(f"Request failed: {e}")
+        return None
     return r
 
-res = send(ZAP, SERVER, body)
-print("This is proof of concept...", "It is a complex sequence from multiple servers...")
-print(res.text)
-
+# Test functions
 def test1():
-    start = 0 
-    end = 4
-    step = 1
-    body = const_body(start, end, step, 0.0)
+    body = const_body(start=0, end=4, step=1, c=0.0)
     zap = "Constant"
     server = "Binarni Banditi"
     res = send(zap, server, body)
-    res = res.json()
-    res = [float(x) for x in res]
-    val = [0.0,0.0,0.0,0.0,0.0]
-    if res == val:
-        print("Passes test1.")
-    else:
-        print("Failed test1")
-        print("Expected :", val)
-        print("Received :", res)
-    return 
+    if res:
+        res = res.json()
+        val = [0.0, 0.0, 0.0, 0.0, 0.0]
+        if res == val:
+            print("Passes test1.")
+        else:
+            print("Failed test1.")
+            print("Expected :", val)
+            print("Received :", res)
 
 def test2():
-    start = 0 
-    end = 4
-    step = 1
-    body = arit_body(start, end, step, 10.0, 2.0)
+    body = arit_body(start=0, end=4, step=1, a_0=10.0, d=2.0)
     zap = "Arithmetic"
     server = "Binarni Banditi"
     res = send(zap, server, body)
-    res = res.json()
-    res = [float(x) for x in res]
-    val = [10, 12, 14, 16, 18]
-    if res == val:
-        print("Passes test2.")
-    else:
-        print("Failed test2")
-        print("Expected :", val)
-        print("Received :", res)
-    return 
+    if res:
+        res = res.json()
+        val = [10, 12, 14, 16, 18]
+        if res == val:
+            print("Passes test2.")
+        else:
+            print("Failed test2.")
+            print("Expected :", val)
+            print("Received :", res)
 
 def test3():
-    start = 0 
-    end = 4
-    step = 1
-    body = geo_body(start, end, step, 1.0, 2.0)
+    body = geo_body(start=0, end=4, step=1, a=1.0, q=2.0)
     zap = "Geometric"
     server = "Binarni Banditi"
     res = send(zap, server, body)
-    res = res.json()
-    res = [float(x) for x in res]
-    val = [1, 2, 4, 8, 16]
-    if res == val:
-        print("Passes test3.")
-    else:
-        print("Failed test3")
-        print("Expected :", val)
-        print("Received :", res)
-    return 
+    if res:
+        res = res.json()
+        val = [1, 2, 4, 8, 16]
+        if res == val:
+            print("Passes test3.")
+        else:
+            print("Failed test3.")
+            print("Expected :", val)
+            print("Received :", res)
 
 def test4():
-    start = 0 
-    end = 4
-    step = 1
-    body = drop_body(start, end, step, shift = 2, seq =
-        gen_seq(name = "Geometric", parameters = [1.0, 2.0], sequences = [])
-    )
+    body = drop_body(start=0, end=4, step=1, shift=2, seq=gen_seq(name="Geometric", parameters=[1.0, 2.0], sequences=[]))
     zap = "Drop"
     server = "Binarni Banditi"
     res = send(zap, server, body)
-    res = res.json()
-    res = [float(x) for x in res]
-    val = [4.0, 8, 16, 32, 64]
-    if res == val:
-        print("Passes test4.")
-    else:
-        print("Failed test4")
-        print("Expected :", val)
-        print("Received :", res)
-    return 
+    if res:
+        res = res.json()
+        val = [4.0, 8, 16, 32, 64]
+        if res == val:
+            print("Passes test4.")
+        else:
+            print("Failed test4.")
+            print("Expected :", val)
+            print("Received :", res)
 
 def test5():
-    start = 0 
-    end = 4
-    step = 1
-    body = lin_body(start, end, step, -1, 2, 10,
-        seq1 = gen_seq(name = "Constant", parameters = [2.0], sequences = []),
-        seq2 = gen_seq(name = "Arithmetic", parameters = [3.0, 1.0], sequences = []))
+    body = lin_body(start=0, end=4, step=1, l_0=-1, l_1=2, l_2=10,
+                    seq1=gen_seq(name="Constant", parameters=[2.0], sequences=[]),
+                    seq2=gen_seq(name="Arithmetic", parameters=[3.0, 1.0], sequences=[]))
     zap = "LinearCombination"
     server = "Binarni Banditi"
     res = send(zap, server, body)
-    res = res.json()
-    res = [float(x) for x in res]
-    val = [33, 43, 53, 63, 73]
-    if res == val:
-        print("Passes test5.")
-    else:
-        print("Failed test5")
-        print("Expected :", val)
-        print("Received :", res)
-    return 
-def test ():
+    if res:
+        res = res.json()
+        val = [33, 43, 53, 63, 73]
+        if res == val:
+            print("Passes test5.")
+        else:
+            print("Failed test5.")
+            print("Expected :", val)
+            print("Received :", res)
+
+def test6():
+    body = story_body(start=0, end=4, step=1, author="6", genre="3",
+                      seq=gen_seq(name="Constant_Imposter", parameters=[4], sequences=[]))
+    zap = "Story"
+    server = "Binarni Banditi"
+    res = send(zap, server, body)
+    if res:
+        res = res.json()
+        if isinstance(res, list) and all(isinstance(x, (int, float)) or isinstance(x, str) for x in res):
+            print("Passes test6.")
+        else:
+            print("Failed test6.")
+            print("Response format or type is incorrect.")
+            print("Received :", res)
+
+def test7():
+    body = ai_body(start=0, end=4, step=1, prediction_range=16,
+                   seq=gen_seq(name="LinearCombination_Imposter", parameters=[2, -3, 10], sequences=[gen_seq(name="Geometric", parameters=[1.0, 4.0], sequences=[]), gen_seq(name="Arithmetic", parameters=[3.0, 5.0], sequences=[])]))
+    zap = "Ai"
+    server = "Binarni Banditi"
+    res = send(zap, server, body)
+    if res:
+        res = res.json()
+        if isinstance(res, list) and all(isinstance(x, (int, float)) for x in res):
+            print("Passes test7.")
+            print(res)
+        else:
+            print("Failed test7.")
+            print("Response format or type is incorrect.")
+            print("Received :", res)
+
+def test8():
+    body = ai_body(start=0, end=4, step=1, prediction_range=18,
+                   seq=gen_seq(name="Geometric", parameters=[1.0, 2.0], sequences=[]))
+    zap = "Ai"
+    server = "Binarni Banditi"
+    res = send(zap, server, body)
+    if res:
+        res = res.json()
+        val = [1, 2, 4, 8, 16]
+        if res == val:
+            print("Passes test8.")
+        else:
+            print("Failed test8.")
+            print("Expected :", val)
+            print("Received :", res)
+
+# Run tests
+if __name__ == "__main__":
     test1()
     test2()
-    test3() 
+    test3()
     test4()
     test5()
-test()
+    test6()
+    test7()
+    test8()
