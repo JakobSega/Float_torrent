@@ -1,10 +1,10 @@
 use crate::sequence::models::Sequence;
-use linfa::prelude::*;
-use linfa_linear::{LinearRegression, FittedLinearRegression};
-use ndarray::Array2;
+use smartcore::linalg::naive::dense_matrix::DenseMatrix;
+use smartcore::linear::linear_regression::LinearRegression as SmartcoreLinearRegression;
+//use ndarray::Array2;
 
 pub struct AiModel {
-    model: Option<FittedLinearRegression<f64>>,
+    model: Option<SmartcoreLinearRegression<f64, DenseMatrix<f64>>>,
 }
 
 impl AiModel {
@@ -15,54 +15,55 @@ impl AiModel {
     }
 
     pub fn train(&mut self, input_data: &[Option<f64>]) {
-        let num_samples = input_data.len() - 1; // Adjusted for simplicity
-        let num_features = 1; // For simplicity; adjust if needed based on your actual features
+        let num_samples = input_data.len() - 1;
+        let num_features = 1;
 
-        let mut x_train = Array2::<f64>::zeros((num_samples, num_features));
-        let mut y_train = Array2::<f64>::zeros((num_samples, 1));
+        let mut x_train = Vec::with_capacity(num_samples * num_features);
+        let mut y_train = Vec::with_capacity(num_samples);
 
         for i in 0..num_samples {
-            x_train[[i, 0]] = input_data[i].unwrap_or_default();
-            y_train[[i, 0]] = input_data[i + 1].unwrap_or_default(); // Simple example
+            x_train.push(input_data[i].unwrap_or_default());
+            y_train.push(input_data[i + 1].unwrap_or_default());
         }
 
-        let dataset = Dataset::new(x_train, y_train);
-        let model = LinearRegression::default();
-        self.model = Some(model.fit(&dataset).expect("Failed to fit model"));
+        // Convert x_train to a DenseMatrix
+        let x_matrix = DenseMatrix::from_2d_vec(&x_train.iter().map(|&v| vec![v]).collect::<Vec<_>>());
+
+        // y_train is already a vector, no need to convert it
+        let y_matrix = y_train.clone();
+
+        // Fit the model
+        let model = SmartcoreLinearRegression::fit(&x_matrix, &y_matrix, Default::default())
+            .expect("Failed to fit the model");
+
+        self.model = Some(model);
     }
 
     pub fn predict(&self, input_data: &[Option<f64>], num_predictions: usize) -> Vec<Option<f64>> {
         let mut predictions = Vec::with_capacity(num_predictions);
 
         if let Some(ref fitted_model) = self.model {
-            for i in 0..(input_data.len() - 1) {
-                let x_pred = Array2::from_shape_vec(
-                    (1, 1), // Adjust shape if needed
-                    vec![input_data[i].unwrap_or_default()],
-                ).expect("Failed to create prediction array");
+            for i in 0..input_data.len() {
+                let x_pred = DenseMatrix::from_2d_vec(&vec![vec![input_data[i].unwrap_or_default()]]);
+                let y_pred = fitted_model.predict(&x_pred).expect("Failed to predict");
 
-                let y_pred = fitted_model.predict(&x_pred);
-                predictions.push(Some(y_pred[[0]]));
+                predictions.push(Some(y_pred[0])); // y_pred is a vector, extract the first element
 
                 if predictions.len() >= num_predictions {
                     break;
                 }
             }
 
-            // If there are fewer predictions than requested, fill the rest with `None`
             while predictions.len() < num_predictions {
                 predictions.push(None);
             }
         } else {
-            // If the model is not trained, return `None` for all requested predictions
             predictions.extend(vec![None; num_predictions]);
         }
 
         predictions
     }
 }
-
-
 
 pub struct Ai {
     pub input_sequence: Vec<Option<f64>>,
@@ -74,10 +75,8 @@ impl Ai {
     pub fn new(input_sequence: Vec<Option<f64>>, num_predictions: usize) -> Self {
         let mut ai_model = AiModel::new();
 
-        // Train the model with the input sequence
         ai_model.train(&input_sequence);
 
-        // Get predictions based on the input sequence and number of predictions
         let prediction = ai_model.predict(&input_sequence, num_predictions);
 
         Ai {
