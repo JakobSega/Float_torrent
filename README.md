@@ -156,3 +156,8 @@ This project is designed to test server-to-server communication and sequence han
 
 For further details on sequence requests and server interactions, refer to the `try.py` script included in the project.
 
+## Authors
+
+Jakob Šega, Luka Andrenšek
+
+
