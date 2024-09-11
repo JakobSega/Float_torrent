@@ -148,6 +148,15 @@ pub fn get_groq_api_key() -> String {
     env::var("GROQ_API_KEY").expect("GROQ_API_KEY not found in environment variables")
 }
 
+async fn get_sequence(request : &SequenceRequest, i : usize, range: Range, error_message : &mut Box<String>,my_url : &str) -> Option<Vec<Option<f64>>> {
+    let s = &request.sequences[i];
+    let (path1, cond1, body1) = from_seq_syntax_to_recursive_call((*(*s)).clone(), range);
+    let result1 = Box::pin(handle_post(error_message,&path1, cond1, my_url, body1));
+    let vec1 = *Pin::into_inner(result1.await);
+    vec1
+
+}
+
 pub fn sequences(server: &Server, number: u8) -> Vec<SequenceInfo> {
     let mut sequences = Vec::new();
     sequences.push(SequenceInfo {
@@ -658,16 +667,10 @@ pub async fn handle_post(
             let range = request.range;
             
             let (lambda0, lambda1, lambda2) = (request.parameters[0], request.parameters[1], request.parameters[2]) ;
-            let s1 = &request.sequences[0];
-            let (path1, cond1, body1) = from_seq_syntax_to_recursive_call((**s1).clone(), range);
-            let result1 = Box::pin(handle_post(error_message,&path1, cond1, my_url, body1, server, number));
-            let vec1 = *Pin::into_inner(Box::pin(result1.await));
-
-            let s2 = &request.sequences[1];
-            let (path2, cond2, body2) = from_seq_syntax_to_recursive_call((**s2).clone(), range);
-            let result2 = Box::pin(handle_post(error_message,&path2, cond2, my_url, body2, server, number));
-            let vec2 = *Pin::into_inner(Box::pin(result2.await));
-           
+            let vec1 = get_sequence(&request, 0, range, error_message, my_url).await;
+            
+            let vec2 = get_sequence(&request, 1, range, error_message, my_url).await;
+            
             match (vec1, vec2) {
                 (Some(v1), Some(v2)) => {
                     
@@ -696,15 +699,9 @@ pub async fn handle_post(
             let range = request.range;
             
             
-            let s1 = &request.sequences[0];
-            let (path1, cond1, body1) = from_seq_syntax_to_recursive_call((**s1).clone(), range);
-            let result1 = Box::pin(handle_post(error_message,&path1, cond1, my_url, body1, server, number));
-            let vec1 = *Pin::into_inner(Box::pin(result1.await));
-
-            let s2 = &request.sequences[1];
-            let (path2, cond2, body2) = from_seq_syntax_to_recursive_call((**s2).clone(), range);
-            let result2 = Box::pin(handle_post(error_message,&path2, cond2, my_url, body2, server, number));
-            let vec2 = *Pin::into_inner(Box::pin(result2.await));
+            let vec1 = get_sequence(&request, 0, range, error_message, my_url).await;
+            let vec2 = get_sequence(&request, 1, range, error_message, my_url).await;
+            
             match (vec1, vec2) {
                 (Some(v1), Some(v2)) => {
                     let result = lin_comb_from_vec(v1, v2, 0.0, 1.0, 1.0);
@@ -732,15 +729,9 @@ pub async fn handle_post(
             let range = request.range;
             
             
-            let s1 = &request.sequences[0];
-            let (path1, cond1, body1) = from_seq_syntax_to_recursive_call((**s1).clone(), range);
-            let result1 = Box::pin(handle_post(error_message,&path1, cond1, my_url, body1, server, number));
-            let vec1 = *Pin::into_inner(Box::pin(result1.await));
-
-            let s2 = &request.sequences[1];
-            let (path2, cond2, body2) = from_seq_syntax_to_recursive_call((**s2).clone(), range);
-            let result2 = Box::pin(handle_post(error_message,&path2, cond2, my_url, body2, server, number));
-            let vec2 = *Pin::into_inner(Box::pin(result2.await));
+            let vec1 = get_sequence(&request, 0, range, error_message, my_url).await;
+            let vec2 = get_sequence(&request, 1, range, error_message, my_url).await;
+             
             match (vec1, vec2) {
                 (Some(v1), Some(v2)) => {
                     let result = pointwise_multiply(v1, v2);
@@ -782,11 +773,8 @@ pub async fn handle_post(
                     step : range.step
                 };
 
-                
-                let s1 = &request.sequences[0];
-                let (path1, cond1, body1) = from_seq_syntax_to_recursive_call((**s1).clone(), range);
-                let result1 = Box::pin(handle_post(error_message,&path1, cond1, my_url, body1, server, number));
-                let vec1 = *Pin::into_inner(Box::pin(result1.await));
+                let vec1 = get_sequence(&request, 0, range, error_message, my_url).await;
+            
                 match &vec1 {
                     Some(v) => {
                         println!("We sent this : {:?}\n", v);
@@ -805,10 +793,8 @@ pub async fn handle_post(
             println!("Got a POST {} request. This sequence is available on this server with the requested signature. Returning the desired range.\n", r);
             
             let range = request.range;
-            let s1 = &request.sequences[0];
-            let (path1, cond1, body1) = from_seq_syntax_to_recursive_call((**s1).clone(), range);
-            let result1 = Box::pin(handle_post(error_message,&path1, cond1, my_url, body1, server, number));
-            let vec1 = *Pin::into_inner(Box::pin(result1.await));
+            let vec1 = get_sequence(&request, 0, range, error_message, my_url).await;
+            
             let mut complex_res = false;
 
             match vec1 {
